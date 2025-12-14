@@ -1,10 +1,17 @@
+'''
+This script generates taskfarm files and SLURM job scripts to convert a large dataset of chemical compounds
+from SMILES format to Wiswesser Line Notation (WLN) using the WriteWLN tool from Blakey et al (https://github.com/Mblakey/wiswesser)
+
+Created by: Leo Arogundade
+'''
+
 import csv
 import math
 import os
 
-BASE = "/scratch/la3g22/chem6090/wln_conversion"
+BASE = "wln_conversion"
 INPUT_CSV = f"{BASE}/input/compound_dataset_1m_cleaned.csv"
-WRITEWLN = "/scratch/la3g22/wiswesser/build/writewln"
+WRITEWLN = "wiswesser/build/writewln"
 
 TASKFARM_DIR = f"{BASE}/taskfarm_files"
 SLURM_DIR = f"{BASE}/slurm_files"
@@ -14,13 +21,13 @@ os.makedirs(TASKFARM_DIR, exist_ok=True)
 os.makedirs(SLURM_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-CHUNK_SIZE = 100000   # 25k rows per job
+CHUNK_SIZE = 100000   # Number of rows per job
 
-# ----------------------------
-# STEP 1 — Load input CSV
-# ----------------------------
+# Loading data
+
 rows = []
-with open(INPUT_CSV, newline="", encoding="utf-8") as f:
+
+with open(INPUT_CSV, newline = "", encoding = "utf-8") as f:
     reader = csv.DictReader(f)
     for r in reader:
         rows.append(r)
@@ -29,9 +36,8 @@ num_chunks = math.ceil(len(rows) / CHUNK_SIZE)
 print(f"Loaded {len(rows)} rows.")
 print(f"Generating {num_chunks} taskfarm chunks...")
 
-# ----------------------------
-# STEP 2 — Build taskfarm command files
-# ----------------------------
+# Building taskfarm files and SLURM scripts
+
 for i in range(num_chunks):
     start = i * CHUNK_SIZE
     end = min(start + CHUNK_SIZE, len(rows))
@@ -42,7 +48,7 @@ for i in range(num_chunks):
 
     with open(task_file, "w") as tf:
         for row in chunk_rows:
-            smiles = row["connectivity_smiles"].replace('"', '')  # safety
+            smiles = row["connectivity_smiles"].replace('"', '')
             cmd = (
                 f'{WRITEWLN} -ismi "{smiles}" '
                 f'| awk \'{{print "{smiles}," $0}}\' '
@@ -52,9 +58,8 @@ for i in range(num_chunks):
 
     print(f"Created task file: {task_file}")
 
-    # ----------------------------
-    # STEP 3 — Create SLURM file for this chunk
-    # ----------------------------
+    # Creating SLURM script for this taskfarm file
+
     slurm_file = f"{SLURM_DIR}/wln_taskfarm_{i+1}.slurm"
     with open(slurm_file, "w") as sf:
         sf.write(f"""#!/bin/bash
@@ -73,9 +78,6 @@ export NUMEXPR_NUM_THREADS=1
 
 staskfarm {task_file}
 """)
-
-
-
 
     print(f"Created SLURM file: {slurm_file}")
 

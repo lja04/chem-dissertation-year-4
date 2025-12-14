@@ -1,14 +1,19 @@
+'''
+This script merges the Wiswesser Line Notation (WLN) results back into the original compound dataset CSV.
+
+Created by: Leo Arogundade
+'''
+
 import csv
 
-BASE = "/scratch/la3g22/chem6090/wln_conversion"
+BASE = "wln_conversion"
 
 original_file = f"{BASE}/input/compound_dataset_1m_cleaned.csv"
 wln_file = f"{BASE}/results/final_wln_output.csv"
 output_file = f"{BASE}/results/compound_dataset_1m_with_wln.csv"
 
-# ------------------------------------------------
-# STEP 1 — Load WLN results into dictionary
-# ------------------------------------------------
+# Loading WLN results
+
 print("Loading WLN results...")
 
 wln_dict = {}
@@ -22,9 +27,8 @@ with open(wln_file, newline="", encoding="utf-8") as f:
 print(f"Loaded {len(wln_dict)} WLN mappings.")
 print("Starting merge into original CSV...\n")
 
-# ------------------------------------------------
-# STEP 2 — Merge into original CSV with progress
-# ------------------------------------------------
+# Merging WLN into original CSV
+
 with open(original_file, newline="", encoding="utf-8") as infile, \
      open(output_file, "w", newline="", encoding="utf-8") as outfile:
 
@@ -51,9 +55,11 @@ with open(original_file, newline="", encoding="utf-8") as infile, \
         row["wln_string"] = wln
         writer.writerow(row)
 
-        # Progress every 1000 rows
+        # Print progress every 1000 rows
         if total % 1000 == 0:
             print(f"Processed {total} rows...")
+
+# Final summary
 
 print("\nMerge complete!")
 print(f"WLN found for: {written}")
